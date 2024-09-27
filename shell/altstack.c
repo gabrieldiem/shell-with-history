@@ -12,6 +12,9 @@ free_alternative_stack(stack_t *alternative_stack)
 	}
 }
 
+/*
+ * Initializes the alternative stack with heap memory.
+ */
 void
 init_alternative_stack(stack_t *alternative_stack)
 {
@@ -28,6 +31,9 @@ init_alternative_stack(stack_t *alternative_stack)
 	alternative_stack->ss_flags = SS_ONSTACK;
 }
 
+/*
+ * Installs the alternative stack.
+ */
 void
 install_alternative_stack(stack_t *alternative_stack)
 {

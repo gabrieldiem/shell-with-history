@@ -43,9 +43,6 @@ run_cmd(char *cmd, char *prompt, stack_t *signal_alt_stack)
 		if (parsed->type == PIPE)
 			parsed_pipe = parsed;
 
-		// CHECK: El proceso hijo hereda el handling de sigchild, se
-		// debería reestablecer el default? si alguna syscall usa esa
-		// señal, imagino que si?
 
 		if (parsed->type != BACK) {
 			setpgid(USE_PID_OF_THIS_PROCESS,
