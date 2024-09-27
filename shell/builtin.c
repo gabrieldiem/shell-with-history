@@ -163,9 +163,9 @@ pwd(char *cmd, int *status)
 int
 history(char *cmd, int *status)
 {
-	if (cmd[0] == BEGIN_ANSI_SEQUENCE_CHARACTER) {
-		return EXECUTED;
-	}
+	/*if (cmd[0] == BEGIN_ANSI_SEQUENCE_CHARACTER) {
+	        return EXECUTED;
+	}*/
 	MARK_UNUSED(cmd);
 	MARK_UNUSED(status);
 	return NOT_EXECUTED;

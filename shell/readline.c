@@ -74,22 +74,23 @@ handle_history_switch(char *buffer,
                       char char_read,
                       bool *should_stop,
                       const char *prompt,
-                      bool just_handled_arrow)
+                      bool *just_handled_arrow)
 {
 	memset(ansi_sequence_buff, END_STRING, ANSI_SEQUENCE_BUFF_SIZE);
 	ansi_sequence_buff[0] = char_read;
 	if (read(STDIN_FILENO, &ansi_sequence_buff[1], 2) == 2) {
 		memset(buffer, END_STRING, BUFLEN);
-		memcpy(buffer,
+		*buffer_index = 0;
+		/*memcpy(buffer,
 		       ansi_sequence_buff,
 		       (ANSI_SEQUENCE_BUFF_SIZE - 1) * sizeof(char));
-		*buffer_index = 3;
-		buffer[*buffer_index] = END_STRING;
+		buffer_index = 3;
+		buffer[*buffer_index] = END_STRING;*/
 
-		if (buffer[1] == BEGIN_ANSI_FUNCTION_CHARACTER) {
-			switch (buffer[2]) {
+		if (ansi_sequence_buff[1] == BEGIN_ANSI_FUNCTION_CHARACTER) {
+			switch (ansi_sequence_buff[2]) {
 			case ANSI_FUNCTION_CURSOR_UP_CHARACTER:
-				if (history_index > 0 && just_handled_arrow) {
+				if (history_index > 0 && *just_handled_arrow) {
 					history_index--;
 				}
 				if (history_index >= 0) {
@@ -99,19 +100,27 @@ handle_history_switch(char *buffer,
 					        history_vector[history_index]);
 					echo_buffer_with_prompt();
 				}
+				*just_handled_arrow = true;
 				break;
 			case ANSI_FUNCTION_CURSOR_DOWN_CHARACTER:
 				if (history_index < history_count - 1) {
 					history_index++;
+				} else if (history_index == history_count - 1) {
+					buffer[0] = END_STRING;
+					*buffer_index = 0;
+					echo_buffer_with_prompt();
+					*just_handled_arrow = false;
+					return;
+				}
+
+				if (history_index >= 0 && *just_handled_arrow) {
 					strcpy(buffer,
 					       history_vector[history_index]);
 					*buffer_index = strlen(
 					        history_vector[history_index]);
 					echo_buffer_with_prompt();
-				} else {
-					buffer[0] = END_STRING;
-					*buffer_index = 0;
 				}
+				*just_handled_arrow = true;
 				break;
 			}
 		}
@@ -125,7 +134,7 @@ handle_end_line_read(bool *just_handled_arrow, int *buffer_index, bool *should_s
 		if ((*buffer_index) + 1 < BUFLEN) {
 			buffer[(*buffer_index) + 1] = END_STRING;
 		}
-		if (history_count < MAX_HISTORY) {
+		if (history_count < MAX_HISTORY && strlen(buffer) > 0) {
 			strcpy(history_vector[history_count], buffer);
 			history_count++;
 			history_index = history_count - 1;
@@ -147,7 +156,7 @@ handle_inline_character_deletion(int *buffer_index)
 static void
 echo(char *char_read)
 {
-	write(STDOUT_FILENO, char_read, 1);
+	write(STDOUT_FILENO, char_read, 1 * sizeof(char));
 	fflush(stdout);
 }
 
@@ -187,8 +196,7 @@ read_line_non_canonical(const char *prompt, bool *just_handled_arrow)
 			                      char_read,
 			                      &should_stop,
 			                      prompt,
-			                      *just_handled_arrow);
-			*just_handled_arrow = true;
+			                      just_handled_arrow);
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 		} else if (char_read == END_LINE) {
 			echo(&char_read);
