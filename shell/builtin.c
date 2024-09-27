@@ -163,6 +163,8 @@ pwd(char *cmd, int *status)
 int
 history(char *cmd, int *status)
 {
-	// Your code here
+	if (cmd[0] == BEGIN_ANSI_SEQUENCE_CHARACTER) {
+		return EXECUTED;
+	}
 	return NOT_EXECUTED;
 }

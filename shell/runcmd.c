@@ -9,6 +9,7 @@ run_cmd(char *cmd, char *prompt, stack_t *signal_alt_stack)
 {
 	pid_t _pid;
 	struct cmd *parsed;
+	// printf("[%s]\n", cmd);
 
 	// if the "enter" key is pressed
 	// just print the prompt again
