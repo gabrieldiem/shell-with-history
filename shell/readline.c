@@ -81,11 +81,6 @@ handle_history_switch(char *buffer,
 	if (read(STDIN_FILENO, &ansi_sequence_buff[1], 2) == 2) {
 		memset(buffer, END_STRING, BUFLEN);
 		*buffer_index = 0;
-		/*memcpy(buffer,
-		       ansi_sequence_buff,
-		       (ANSI_SEQUENCE_BUFF_SIZE - 1) * sizeof(char));
-		buffer_index = 3;
-		buffer[*buffer_index] = END_STRING;*/
 
 		if (ansi_sequence_buff[1] == BEGIN_ANSI_FUNCTION_CHARACTER) {
 			switch (ansi_sequence_buff[2]) {
@@ -130,15 +125,15 @@ handle_history_switch(char *buffer,
 static void
 handle_end_line_read(bool *just_handled_arrow, int *buffer_index, bool *should_stop)
 {
-	if (!(*just_handled_arrow)) {
-		if ((*buffer_index) + 1 < BUFLEN) {
-			buffer[(*buffer_index) + 1] = END_STRING;
-		}
-		if (history_count < MAX_HISTORY && strlen(buffer) > 0) {
-			strcpy(history_vector[history_count], buffer);
-			history_count++;
-			history_index = history_count - 1;
-		}
+	if ((*buffer_index) + 1 < BUFLEN) {
+		buffer[(*buffer_index) + 1] = END_STRING;
+	}
+
+	if (history_count < MAX_HISTORY && strlen(buffer) > 0) {
+		fflush(stdout);
+		strcpy(history_vector[history_count], buffer);
+		history_count++;
+		history_index = history_count - 1;
 	}
 	*should_stop = true;
 }
@@ -199,8 +194,8 @@ read_line_non_canonical(const char *prompt, bool *just_handled_arrow)
 			                      just_handled_arrow);
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 		} else if (char_read == END_LINE) {
-			echo(&char_read);
 			handle_end_line_read(just_handled_arrow, &i, &should_stop);
+			echo(&char_read);
 			*just_handled_arrow = false;
 		} else if (char_read == BACKSPACE && false) {
 			handle_inline_character_deletion(&i);
