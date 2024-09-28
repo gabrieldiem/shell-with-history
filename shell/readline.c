@@ -143,7 +143,11 @@ handle_inline_character_deletion(int *buffer_index)
 {
 	if (*buffer_index > 0) {
 		(*buffer_index)--;
-		printf("\b \b");
+		buffer[*buffer_index] = END_STRING;
+		printf(ANSI_CODE_MOVE_CURSOR_ONE_CHARACTER_TO_LEFT);  // Move 1 to left, for cleaning
+		printf("%c",
+		       SPACE);  // Overwrite with 1 space so it appears as cleared
+		printf(ANSI_CODE_MOVE_CURSOR_ONE_CHARACTER_TO_LEFT);  // Move 1 to left again, for positioning
 		fflush(stdout);
 	}
 }
@@ -197,9 +201,10 @@ read_line_non_canonical(const char *prompt, bool *just_handled_arrow)
 			handle_end_line_read(just_handled_arrow, &i, &should_stop);
 			echo(&char_read);
 			*just_handled_arrow = false;
-		} else if (char_read == BACKSPACE && false) {
+		} else if (char_read == BACKSPACE) {
 			handle_inline_character_deletion(&i);
 			*just_handled_arrow = false;
+			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 		} else {
 			load_buffer_and_echo(
 			        just_handled_arrow, buffer, &i, &char_read);
