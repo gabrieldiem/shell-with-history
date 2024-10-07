@@ -127,10 +127,9 @@ static void
 run_shell_in_non_canonical_mode(stack_t *signal_alt_stack)
 {
 	char *cmd;
-	int cmd_index = 0;
-	bool just_handled_arrow = false;
+	bool just_handled_arrow_action = false;
 
-	while ((cmd = read_line_non_canonical(prompt, &just_handled_arrow)) !=
+	while ((cmd = read_line_non_canonical(prompt, &just_handled_arrow_action)) !=
 	       NULL) {
 		if (run_cmd(cmd, prompt, signal_alt_stack) == EXIT_SHELL)
 			return;

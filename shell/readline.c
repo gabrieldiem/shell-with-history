@@ -7,6 +7,21 @@
 static char buffer[BUFLEN];
 static char ansi_sequence_buff[ANSI_SEQUENCE_BUFF_SIZE] = { END_STRING };
 
+static void
+echo_eval_symbol()
+{
+	fprintf(stdout, "%s", "$ ");
+	fflush(stdout);
+}
+
+static void
+echo_prompt(const char *prompt)
+{
+	fprintf(stdout, "%s %s %s\n", COLOR_RED, prompt, COLOR_RESET);
+	echo_eval_symbol();
+	fflush(stdout);
+}
+
 // reads a line from the standard input
 // and prints the prompt
 char *
@@ -16,8 +31,7 @@ read_line(const char *prompt)
 
 #ifndef SHELL_NO_INTERACTIVE
 	if (isatty(1)) {
-		fprintf(stdout, "%s %s %s\n", COLOR_RED, prompt, COLOR_RESET);
-		fprintf(stdout, "%s", "$ ");
+		echo_prompt(prompt);
 	}
 #else
 	MARK_UNUSED(prompt);
@@ -43,21 +57,6 @@ read_line(const char *prompt)
 }
 
 static void
-echo_eval_symbol()
-{
-	fprintf(stdout, "%s", "$ ");
-	fflush(stdout);
-}
-
-static void
-echo_prompt(const char *prompt)
-{
-	fprintf(stdout, "%s %s %s\n", COLOR_RED, prompt, COLOR_RESET);
-	echo_eval_symbol();
-	fflush(stdout);
-}
-
-static void
 echo_buffer_with_prompt()
 {
 	printf(ANSI_CODE_CLEAN_LINE /* + */
@@ -72,8 +71,6 @@ handle_history_switch(char *buffer,
                       int *buffer_index,
                       char *ansi_sequence_buff,
                       char char_read,
-                      bool *should_stop,
-                      const char *prompt,
                       bool *just_handled_arrow)
 {
 	memset(ansi_sequence_buff, END_STRING, ANSI_SEQUENCE_BUFF_SIZE);
@@ -123,7 +120,7 @@ handle_history_switch(char *buffer,
 }
 
 static void
-handle_end_line_read(bool *just_handled_arrow, int *buffer_index, bool *should_stop)
+handle_end_line_read(int *buffer_index, bool *should_stop)
 {
 	if ((*buffer_index) + 1 < BUFLEN) {
 		buffer[(*buffer_index) + 1] = END_STRING;
@@ -172,9 +169,14 @@ load_buffer_and_echo(bool *just_handled_arrow,
 	}
 }
 
+static bool
+is_character_eof(char char_read)
+{
+	return (unsigned int) char_read == EOT_ASCII_CODE;
+}
 
 char *
-read_line_non_canonical(const char *prompt, bool *just_handled_arrow)
+read_line_non_canonical(const char *prompt, bool *just_handled_arrow_action)
 {
 	int i = 0;
 	char char_read = 0;
@@ -187,36 +189,42 @@ read_line_non_canonical(const char *prompt, bool *just_handled_arrow)
 
 	read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 
-	while (char_read != EOF && !should_stop) {
-		if (char_read == BEGIN_ANSI_SEQUENCE_CHARACTER) {
+	while (!is_character_eof(char_read) && !should_stop) {
+		switch (char_read) {
+		case BEGIN_ANSI_SEQUENCE_CHARACTER:
 			handle_history_switch(buffer,
 			                      &i,
 			                      ansi_sequence_buff,
 			                      char_read,
-			                      &should_stop,
-			                      prompt,
-			                      just_handled_arrow);
+			                      just_handled_arrow_action);
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
-		} else if (char_read == END_LINE) {
-			handle_end_line_read(just_handled_arrow, &i, &should_stop);
+			break;
+		case END_LINE:
+			handle_end_line_read(&i, &should_stop);
 			echo(&char_read);
-			*just_handled_arrow = false;
-		} else if (char_read == BACKSPACE) {
+			*just_handled_arrow_action = false;
+			break;
+
+		case BACKSPACE:
 			handle_inline_character_deletion(&i);
-			*just_handled_arrow = false;
+			*just_handled_arrow_action = false;
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
-		} else {
-			load_buffer_and_echo(
-			        just_handled_arrow, buffer, &i, &char_read);
-			*just_handled_arrow = false;
+			break;
+
+		default:
+			load_buffer_and_echo(just_handled_arrow_action,
+			                     buffer,
+			                     &i,
+			                     &char_read);
+			*just_handled_arrow_action = false;
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
+			break;
 		}
 	}
 
-
 	// if the user press ctrl+D
 	// just exit normally
-	if (char_read == EOF)
+	if (is_character_eof(char_read))
 		return NULL;
 
 	return buffer;
