@@ -22,3 +22,5 @@ utils.h
 tests/reflector.c
 altstack.c
 altstack.h
+history.c
+history.h

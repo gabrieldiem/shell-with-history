@@ -157,10 +157,11 @@ pwd(char *cmd, int *status)
 // (It has to be executed here and then
 // 	return true)
 int
-history(char *cmd, int *status)
+history(char *cmd, int *status, history_data_t *history)
 {
 	// Your code here
 	MARK_UNUSED_ALWAYS(cmd);
 	MARK_UNUSED_ALWAYS(status);
+	MARK_UNUSED_ALWAYS(history);
 	return NOT_EXECUTED;
 }

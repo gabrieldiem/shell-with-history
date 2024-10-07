@@ -76,6 +76,8 @@
 #define SHELL_CANONICAL_MODE 0
 #define SHELL_NON_CANONICAL_MODE 1
 
+#define HISTFILE_DEFAULT_PATH "~/.fisop_history"
+
 // command representation after parsed
 #define EXEC 1
 #define BACK 2

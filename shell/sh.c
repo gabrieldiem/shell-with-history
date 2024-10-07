@@ -3,6 +3,7 @@
 #include "readline.h"
 #include "runcmd.h"
 #include "altstack.h"
+#include "history.h"
 
 static struct termios ORIGINAL_TERMINAL_SETTINGS;
 char prompt[PRMTLEN] = { END_STRING };
@@ -114,36 +115,36 @@ initialize_sigaction_for_sigchild(stack_t *signal_alt_stack)
 }
 
 static void
-run_shell_in_canonical_mode(stack_t *signal_alt_stack)
+run_shell_in_canonical_mode(stack_t *signal_alt_stack, history_data_t *history)
 {
 	char *cmd;
 
 	while ((cmd = read_line(prompt)) != NULL)
-		if (run_cmd(cmd, prompt, signal_alt_stack) == EXIT_SHELL)
+		if (run_cmd(cmd, prompt, signal_alt_stack, history) == EXIT_SHELL)
 			return;
 }
 
 static void
-run_shell_in_non_canonical_mode(stack_t *signal_alt_stack)
+run_shell_in_non_canonical_mode(stack_t *signal_alt_stack, history_data_t *history)
 {
 	char *cmd;
 	bool just_handled_arrow_action = false;
 
-	while ((cmd = read_line_non_canonical(prompt, &just_handled_arrow_action)) !=
-	       NULL) {
-		if (run_cmd(cmd, prompt, signal_alt_stack) == EXIT_SHELL)
+	while ((cmd = read_line_non_canonical(
+	                prompt, &just_handled_arrow_action, history)) != NULL) {
+		if (run_cmd(cmd, prompt, signal_alt_stack, history) == EXIT_SHELL)
 			return;
 	}
 }
 
 // runs a shell command
 static void
-run_shell(stack_t *signal_alt_stack, int run_mode)
+run_shell(stack_t *signal_alt_stack, int run_mode, history_data_t *history)
 {
 	if (run_mode == SHELL_CANONICAL_MODE) {
-		run_shell_in_canonical_mode(signal_alt_stack);
+		run_shell_in_canonical_mode(signal_alt_stack, history);
 	} else /* if (run_mode == SHELL_NON_CANONICAL_MODE) */ {
-		run_shell_in_non_canonical_mode(signal_alt_stack);
+		run_shell_in_non_canonical_mode(signal_alt_stack, history);
 	}
 }
 
@@ -226,10 +227,13 @@ main(void)
 	stack_t signal_alt_stack;
 	init_alternative_stack(&signal_alt_stack);
 
+	history_data_t history;
+	history_init(&history);
+
 	int run_mode = SHELL_CANONICAL_MODE;
 	init_shell(&signal_alt_stack, &run_mode);
 
-	run_shell(&signal_alt_stack, run_mode);
+	run_shell(&signal_alt_stack, run_mode, &history);
 
 	free_alternative_stack(&signal_alt_stack);
 	return 0;

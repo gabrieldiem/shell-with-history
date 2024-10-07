@@ -5,11 +5,10 @@ struct cmd *parsed_pipe;
 
 // runs the command in 'cmd'
 int
-run_cmd(char *cmd, char *prompt, stack_t *signal_alt_stack)
+run_cmd(char *cmd, char *prompt, stack_t *signal_alt_stack, history_data_t *history_data)
 {
 	pid_t _pid;
 	struct cmd *parsed;
-	// printf("[%s]\n", cmd);
 
 	// if the "enter" key is pressed
 	// just print the prompt again
@@ -17,7 +16,7 @@ run_cmd(char *cmd, char *prompt, stack_t *signal_alt_stack)
 		return 0;
 
 	// "history" built-in call
-	if (history(cmd, &status))
+	if (history(cmd, &status, history_data))
 		return 0;
 
 	// "cd" built-in call

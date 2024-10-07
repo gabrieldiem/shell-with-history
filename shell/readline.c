@@ -2,7 +2,6 @@
 
 #include "defs.h"
 #include "readline.h"
-#include "history.h"
 
 static char buffer[BUFLEN];
 static char ansi_sequence_buff[ANSI_SEQUENCE_BUFF_SIZE] = { END_STRING };
@@ -71,7 +70,8 @@ handle_history_switch(char *buffer,
                       int *buffer_index,
                       char *ansi_sequence_buff,
                       char char_read,
-                      bool *just_handled_arrow)
+                      bool *just_handled_arrow,
+                      history_data_t *history)
 {
 	memset(ansi_sequence_buff, END_STRING, ANSI_SEQUENCE_BUFF_SIZE);
 	ansi_sequence_buff[0] = char_read;
@@ -82,36 +82,20 @@ handle_history_switch(char *buffer,
 		if (ansi_sequence_buff[1] == BEGIN_ANSI_FUNCTION_CHARACTER) {
 			switch (ansi_sequence_buff[2]) {
 			case ANSI_FUNCTION_CURSOR_UP_CHARACTER:
-				if (history_index > 0 && *just_handled_arrow) {
-					history_index--;
-				}
-				if (history_index >= 0) {
-					strcpy(buffer,
-					       history_vector[history_index]);
-					*buffer_index = strlen(
-					        history_vector[history_index]);
-					echo_buffer_with_prompt();
-				}
+				history_move_backwards(history,
+				                       just_handled_arrow,
+				                       buffer,
+				                       buffer_index,
+				                       &echo_buffer_with_prompt);
 				*just_handled_arrow = true;
 				break;
-			case ANSI_FUNCTION_CURSOR_DOWN_CHARACTER:
-				if (history_index < history_count - 1) {
-					history_index++;
-				} else if (history_index == history_count - 1) {
-					buffer[0] = END_STRING;
-					*buffer_index = 0;
-					echo_buffer_with_prompt();
-					*just_handled_arrow = false;
-					return;
-				}
 
-				if (history_index >= 0 && *just_handled_arrow) {
-					strcpy(buffer,
-					       history_vector[history_index]);
-					*buffer_index = strlen(
-					        history_vector[history_index]);
-					echo_buffer_with_prompt();
-				}
+			case ANSI_FUNCTION_CURSOR_DOWN_CHARACTER:
+				history_move_forwards(history,
+				                      just_handled_arrow,
+				                      buffer,
+				                      buffer_index,
+				                      &echo_buffer_with_prompt);
 				*just_handled_arrow = true;
 				break;
 			}
@@ -120,18 +104,13 @@ handle_history_switch(char *buffer,
 }
 
 static void
-handle_end_line_read(int *buffer_index, bool *should_stop)
+handle_end_line_read(int *buffer_index, bool *should_stop, history_data_t *history)
 {
 	if ((*buffer_index) + 1 < BUFLEN) {
 		buffer[(*buffer_index) + 1] = END_STRING;
 	}
-
-	if (history_count < MAX_HISTORY && strlen(buffer) > 0) {
-		fflush(stdout);
-		strcpy(history_vector[history_count], buffer);
-		history_count++;
-		history_index = history_count - 1;
-	}
+	history_add_entry(history, buffer);
+	fflush(stdout);
 	*should_stop = true;
 }
 
@@ -176,7 +155,9 @@ is_character_eof(char char_read)
 }
 
 char *
-read_line_non_canonical(const char *prompt, bool *just_handled_arrow_action)
+read_line_non_canonical(const char *prompt,
+                        bool *just_handled_arrow_action,
+                        history_data_t *history)
 {
 	int i = 0;
 	char char_read = 0;
@@ -196,11 +177,12 @@ read_line_non_canonical(const char *prompt, bool *just_handled_arrow_action)
 			                      &i,
 			                      ansi_sequence_buff,
 			                      char_read,
-			                      just_handled_arrow_action);
+			                      just_handled_arrow_action,
+			                      history);
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 			break;
 		case END_LINE:
-			handle_end_line_read(&i, &should_stop);
+			handle_end_line_read(&i, &should_stop, history);
 			echo(&char_read);
 			*just_handled_arrow_action = false;
 			break;
