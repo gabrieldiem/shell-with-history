@@ -32,4 +32,11 @@ void history_print_last_n(history_data_t *history, unsigned int n, int *status);
 
 void history_print_all(history_data_t *history, int *status);
 
+void history_append_last_cmd(history_data_t *history,
+                             char *cmd_buffer,
+                             int *cmd_buffer_index,
+                             int max_cmd_buff_len);
+
+bool history_is_empty(history_data_t *history);
+
 #endif  // HISTORY_H

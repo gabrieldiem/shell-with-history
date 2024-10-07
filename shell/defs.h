@@ -41,6 +41,7 @@
 #define SPACE ' '
 #define BEGIN_ANSI_SEQUENCE_CHARACTER '\x1b'
 #define BACKSPACE 127
+#define TAB 9
 
 #define BUFLEN 1024
 #define SMALL_BUFLEN 15

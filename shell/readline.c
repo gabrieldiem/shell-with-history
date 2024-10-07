@@ -5,6 +5,11 @@
 
 static char buffer[BUFLEN];
 static char ansi_sequence_buff[ANSI_SEQUENCE_BUFF_SIZE] = { END_STRING };
+static const char EVENT_DESIGNATOR_LAST_CMD_STR[] = "!!";
+static const char EVENT_DESIGNATOR_LAST_CMD_LEN = 2;
+
+static const char EVENT_DESIGNATOR_LAST_NTH_CMDS_STR[] = "!-";
+static const char EVENT_DESIGNATOR_LAST_NTH_CMDS_LEN = 2;
 
 static void
 echo_eval_symbol()
@@ -114,7 +119,7 @@ handle_end_line_read(int *buffer_index, bool *should_stop, history_data_t *histo
 }
 
 static void
-handle_inline_character_deletion(int *buffer_index)
+delete_one_buffered_character(int *buffer_index)
 {
 	if (*buffer_index > 0) {
 		(*buffer_index)--;
@@ -147,6 +152,51 @@ load_buffer_and_echo(bool *just_handled_arrow,
 	}
 }
 
+static void
+echo_buffer_from_position(char *buffer, int buffer_index, int start_position)
+{
+	for (int i = start_position; i <= buffer_index; i++) {
+		write(STDOUT_FILENO, &buffer[i], 1 * sizeof(char));
+	}
+	fflush(stdout);
+}
+
+static bool
+check_for_event_designators_and_replace(char *buffer,
+                                        int *buffer_index,
+                                        history_data_t *history,
+                                        char *char_read)
+{
+	bool was_replaced = false;
+
+	if (history_is_empty(history)) {
+		return was_replaced;
+	}
+
+	char *token = strstr(buffer, EVENT_DESIGNATOR_LAST_CMD_STR);
+
+	while (token != NULL && strlen(token) != 0) {
+		for (int i = 0; i < EVENT_DESIGNATOR_LAST_CMD_LEN; i++) {
+			delete_one_buffered_character(buffer_index);
+		}
+
+		int original_buff_index = *buffer_index;
+		history_append_last_cmd(history, buffer, buffer_index, BUFLEN);
+		echo_buffer_from_position(buffer,
+		                          *buffer_index,
+		                          original_buff_index);
+
+		token += EVENT_DESIGNATOR_LAST_CMD_LEN * sizeof(char);
+		token = strstr(token, EVENT_DESIGNATOR_LAST_CMD_STR);
+		was_replaced = true;
+	}
+
+	if (was_replaced) {
+		*char_read = SPACE;
+	}
+	return was_replaced;
+}
+
 static bool
 is_character_eof(char char_read)
 {
@@ -161,6 +211,7 @@ read_line_non_canonical(const char *prompt,
 	int i = 0;
 	char char_read = 0;
 	bool should_stop = false;
+	bool was_replaced = false;
 
 	echo_prompt(prompt);
 
@@ -187,20 +238,33 @@ read_line_non_canonical(const char *prompt,
 			break;
 
 		case BACKSPACE:
-			handle_inline_character_deletion(&i);
+			delete_one_buffered_character(&i);
 			*just_handled_arrow_action = false;
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 			break;
 
-		default:
-			load_buffer_and_echo(just_handled_arrow_action,
-			                     buffer,
-			                     &i,
-			                     &char_read);
+		case TAB:
+			was_replaced = check_for_event_designators_and_replace(
+			        buffer, &i, history, &char_read);
 			*just_handled_arrow_action = false;
-			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
+
+			if (was_replaced) {
+				read(STDIN_FILENO, &char_read, 1 * sizeof(char));
+			}
+			/* fall through */
+
+		default:
+			if (!was_replaced) {
+				load_buffer_and_echo(just_handled_arrow_action,
+				                     buffer,
+				                     &i,
+				                     &char_read);
+				*just_handled_arrow_action = false;
+				read(STDIN_FILENO, &char_read, 1 * sizeof(char));
+			}
 			break;
 		}
+		was_replaced = false;
 	}
 
 	// if the user press ctrl+D
