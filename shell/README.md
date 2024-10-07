@@ -2,6 +2,13 @@
 
 Repositorio para el esqueleto del [TP: shell](https://fisop.github.io/website/tps/shell) del curso Mendez-Fresia de **Sistemas Operativos (7508) - FIUBA**
 
+## Integrantes
+
+ - Victoria Avalos - 108434
+ - Julieta Perez Goldstein - 107997
+ - Walter Gabriel Diem - 105618
+ - Gonzalo Ranzani - 105933
+
 ## Respuestas teóricas
 
 Utilizar el archivo `shell.md` provisto en el repositorio

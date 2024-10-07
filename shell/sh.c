@@ -8,22 +8,86 @@ static struct termios ORIGINAL_TERMINAL_SETTINGS;
 char prompt[PRMTLEN] = { END_STRING };
 
 /*
+ * Converts an integer to its string representation
+ * and writes it to a file descriptor.
+ */
+static inline void
+write_number(int fd, int number)
+{
+	char number_buff[NUMBER_BUFF_LEN];
+	int i = sizeof(number_buff) - 1;
+	number_buff[i] = END_STRING;
+
+	if (number == 0) {
+		i--;
+		number_buff[i] = ZERO_CHAR;
+	} else {
+		unsigned int abs_number = number < 0 ? (unsigned int) (-number)
+		                                     : (unsigned int) (number);
+
+		while (abs_number > 0) {
+			i--;
+			number_buff[i] = (abs_number % 10) + ZERO_CHAR;
+			abs_number = abs_number / 10;
+		}
+
+		if (number < 0) {
+			i--;
+			number_buff[i] = MINUS_SIGN_CHAR;
+		}
+	}
+	write(fd, &number_buff[i], sizeof(number_buff) - i - 1);
+}
+
+/*
  * Custom handler for SIGCHLD signal. Waits only for child processes from same
  * process group, non-blocking.
  */
 static void
 sigchild_handler(int /*signum*/, siginfo_t *signal_info, void * /*ucontext_t*/)
 {
-	int status = 0;
-	int child_pid = (int) signal_info->si_pid;
-	int child_gpid = (int) getpgid(child_pid);
-	bool is_background_task = child_pid != child_gpid;
+	int child_status = 0;
+	int child_pid = 0;
 
-	if (is_background_task) {
-		int res = (int) waitpid(child_pid, &status, WNOHANG);
-		if (res != GENERIC_ERROR_CODE) {
-			print_status_info_from_pid(child_pid, status);
+	if (signal_info != NULL) {
+		child_pid = (int) signal_info->si_pid;
+	}
+
+	int res = (int) waitpid(WAIT_FOR_A_PROCESS_THAT_SHARES_GPID_WITH_THIS_PROCESS,
+	                        &child_status,
+	                        WNOHANG);
+	if (res != GENERIC_ERROR_CODE) {
+#ifndef SHELL_NO_INTERACTIVE
+		const char *action;
+
+		if (WIFEXITED(child_status)) {
+			action = "exited";
+			child_status = WEXITSTATUS(child_status);
+		} else if (WIFSIGNALED(child_status)) {
+			action = "killed";
+			child_status = -WTERMSIG(child_status);
+		} else if (WTERMSIG(child_status)) {
+			action = "stopped";
+			child_status = -WSTOPSIG(child_status);
+		} else {
+			action = "exited";
 		}
+
+		char intro[] = "Program with PID [";
+		char close_bracket[] = "] ";
+		char status_with_comma[] = ", status: ";
+		write(STDOUT_FILENO, COLOR_BLUE, strlen(COLOR_BLUE));
+		write(STDOUT_FILENO, intro, strlen(intro));
+		write_number(STDOUT_FILENO, child_pid);
+		write(STDOUT_FILENO, close_bracket, strlen(close_bracket));
+		write(STDOUT_FILENO, action, strlen(action));
+		write(STDOUT_FILENO, status_with_comma, strlen(status_with_comma));
+		write_number(STDOUT_FILENO, child_status);
+		write(STDOUT_FILENO, COLOR_RESET, strlen(COLOR_RESET));
+		write(STDOUT_FILENO, "\n ", 2);
+#else
+		MARK_UNUSED(child_pid);
+#endif
 	}
 }
 

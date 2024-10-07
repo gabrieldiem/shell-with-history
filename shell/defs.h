@@ -34,6 +34,8 @@
 #define MARK_UNUSED(parameter)
 #endif
 
+#define MARK_UNUSED_ALWAYS(parameter) (void) (parameter)
+
 #define END_STRING '\0'
 #define END_LINE '\n'
 #define SPACE ' '
@@ -62,7 +64,12 @@
 
 #define USE_PID_OF_THIS_PROCESS 0
 #define SET_GPID_SAME_AS_PID_OF_THIS_PROCESS 0
+#define WAIT_FOR_A_PROCESS_THAT_SHARES_GPID_WITH_THIS_PROCESS 0
 #define NO_OPTIONS 0
+
+#define NUMBER_BUFF_LEN 20
+#define ZERO_CHAR '0'
+#define MINUS_SIGN_CHAR '-'
 
 #define SHELL_CANONICAL_MODE 0
 #define SHELL_NON_CANONICAL_MODE 1

@@ -3,3 +3,4 @@ sh
 tests/reflector
 # output.txt is used locally for testing
 output.txt
+out.txt

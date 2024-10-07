@@ -131,7 +131,7 @@ run_exec(struct execcmd *exec_cmd, stack_t *signal_alt_stack)
 	}
 
 	set_environ_vars(exec_cmd->eargv, exec_cmd->eargc);
-	execvp(exec_cmd->argv[0], execvp_buff);
+	execvp(execvp_buff[0], execvp_buff);
 	free_command((struct cmd *) exec_cmd);
 	free_alternative_stack(signal_alt_stack);
 	perror("Error on exec");
@@ -393,7 +393,10 @@ exec_cmd(struct cmd *cmd, stack_t *signal_alt_stack)
 	case BACK: {
 		// runs a command in background
 		back_cmd = (struct backcmd *) cmd;
-		exec_cmd(back_cmd->c, signal_alt_stack);
+		struct cmd *bg_cmd = back_cmd->c;
+		back_cmd->c = NULL;
+		free_command((struct cmd *) back_cmd);
+		exec_cmd(bg_cmd, signal_alt_stack);
 		break;
 	}
 

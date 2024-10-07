@@ -23,7 +23,9 @@ free_command(struct cmd *cmd)
 	if (cmd->type == BACK) {
 		b = (struct backcmd *) cmd;
 
-		free_command(b->c);
+		if (b->c != NULL) {
+			free_command(b->c);
+		}
 		free(b);
 		return;
 	}
