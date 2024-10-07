@@ -243,6 +243,7 @@ read_line_non_canonical(const char *prompt,
 			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 			break;
 
+		case SPACE:
 		case TAB:
 			was_replaced = check_for_event_designators_and_replace(
 			        buffer, &i, history, &char_read);
