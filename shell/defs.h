@@ -43,6 +43,7 @@
 #define BACKSPACE 127
 
 #define BUFLEN 1024
+#define SMALL_BUFLEN 15
 #define PRMTLEN 1024
 #define MAXARGS 20
 #define ARGSIZE 1024

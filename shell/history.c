@@ -76,16 +76,35 @@ history_add_entry(history_data_t *history, char *new_cmd_buffer)
 	}
 }
 
-void
-history_print_last_n(history_data_t *history, int n, int *status)
+static void
+history_print_from_index_i(history_data_t *history, int index_i)
 {
-	printf("History N: %d\n", n);
+	char cmd_num[SMALL_BUFLEN] = { END_LINE };
+
+	for (int i = index_i; i <= history->history_index; i++) {
+		snprintf(cmd_num, SMALL_BUFLEN, "[%d]", i);
+		printf("%6s %s\n", cmd_num, history->history_vector[i]);
+		cmd_num[0] = END_LINE;
+	}
+}
+
+void
+history_print_last_n(history_data_t *history, unsigned int n, int *status)
+{
+	int normalized_n = n;
+	if (normalized_n > history->history_count) {
+		normalized_n = history->history_count;
+	}
+
+	int index_start = history->history_count - normalized_n;
+	history_print_from_index_i(history, index_start);
+
 	*status = EXIT_SUCCESS;
 }
 
 void
 history_print_all(history_data_t *history, int *status)
 {
-	printf("History All\n");
+	history_print_from_index_i(history, 0);
 	*status = EXIT_SUCCESS;
 }

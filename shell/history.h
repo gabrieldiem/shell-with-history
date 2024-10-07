@@ -28,7 +28,7 @@ void history_move_forwards(history_data_t *history,
 
 void history_add_entry(history_data_t *history, char *new_cmd_buffer);
 
-void history_print_last_n(history_data_t *history, int n, int *status);
+void history_print_last_n(history_data_t *history, unsigned int n, int *status);
 
 void history_print_all(history_data_t *history, int *status);
 
