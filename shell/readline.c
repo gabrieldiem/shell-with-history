@@ -96,7 +96,6 @@ handle_history_switch(char *buffer,
 				                      buffer,
 				                      buffer_index,
 				                      &echo_buffer_with_prompt);
-				*just_handled_arrow = true;
 				break;
 			}
 		}

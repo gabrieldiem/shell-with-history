@@ -61,6 +61,7 @@ history_move_forwards(history_data_t *history,
 		                     current_cmd_buffer,
 		                     current_cmd_buffer_index);
 		action_when_refreshed();
+		*should_start_moving_index = true;
 	}
 }
 
@@ -73,4 +74,18 @@ history_add_entry(history_data_t *history, char *new_cmd_buffer)
 		history->history_count++;
 		history->history_index = history->history_count - 1;
 	}
+}
+
+void
+history_print_last_n(history_data_t *history, int n, int *status)
+{
+	printf("History N: %d\n", n);
+	*status = EXIT_SUCCESS;
+}
+
+void
+history_print_all(history_data_t *history, int *status)
+{
+	printf("History All\n");
+	*status = EXIT_SUCCESS;
 }

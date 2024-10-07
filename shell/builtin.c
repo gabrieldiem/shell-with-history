@@ -13,6 +13,9 @@ static const int LEN_CD_CMD_STR = 3;
 static const char PWD_CMD_STR[] = "pwd";
 static const int LEN_PWD_CMD_STR = 4;
 
+static const char HISTORY_CMD_STR[] = "history";
+static const int LEN_HISTORY_CMD_STR = 8;
+
 // returns true if the 'exit' call
 // should be performed
 //
@@ -43,7 +46,7 @@ is_cd_command(char *cmd)
 		}
 	}
 
-	if (i <= cmd_len) {
+	if (i <= cmd_len && i >= LEN_CD_CMD_STR - 1) {
 		return cmd[i] == END_STRING || cmd[i] == SPACE;
 	}
 
@@ -151,6 +154,25 @@ pwd(char *cmd, int *status)
 	return EXECUTED;
 }
 
+static bool
+is_history_command(char *cmd)
+{
+	int cmd_len = strlen(cmd);
+	int max_iter = MIN(LEN_HISTORY_CMD_STR - 1, cmd_len);
+	int i = 0;
+	for (i = 0; i < max_iter; i++) {
+		if (cmd[i] != HISTORY_CMD_STR[i]) {
+			return false;
+		}
+	}
+
+	if (i <= cmd_len && i >= LEN_HISTORY_CMD_STR - 1) {
+		return cmd[i] == END_STRING || cmd[i] == SPACE;
+	}
+
+	return false;
+}
+
 // returns true if `history` was invoked
 // in the command line
 //
@@ -159,9 +181,20 @@ pwd(char *cmd, int *status)
 int
 history(char *cmd, int *status, history_data_t *history)
 {
-	// Your code here
-	MARK_UNUSED_ALWAYS(cmd);
-	MARK_UNUSED_ALWAYS(status);
-	MARK_UNUSED_ALWAYS(history);
-	return NOT_EXECUTED;
+	if (!is_history_command(cmd)) {
+		return NOT_EXECUTED;
+	}
+
+	char amount_str[PATH_MAX] = { END_STRING };
+	char *temp_amount_str = strchr(cmd, SPACE);
+
+	if (temp_amount_str != NULL && is_non_empty(temp_amount_str)) {
+		strncpy(amount_str, temp_amount_str + 1, PATH_MAX - 1);
+		int amount = atoi(amount_str);
+		history_print_last_n(history, amount, status);
+	} else {
+		history_print_all(history, status);
+	}
+
+	return EXECUTED;
 }
