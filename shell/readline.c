@@ -336,6 +336,7 @@ read_line_non_canonical(const char *prompt,
 			if (was_replaced) {
 				read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 			}
+			/*   Expected   */
 			/* fall through */
 
 		default:
