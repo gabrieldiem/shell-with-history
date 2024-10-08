@@ -8,8 +8,10 @@ static char ansi_sequence_buff[ANSI_SEQUENCE_BUFF_SIZE] = { END_STRING };
 static const char EVENT_DESIGNATOR_LAST_CMD_STR[] = "!!";
 static const char EVENT_DESIGNATOR_LAST_CMD_LEN = 2;
 
-static const char EVENT_DESIGNATOR_LAST_NTH_CMDS_STR[] = "!-";
-static const char EVENT_DESIGNATOR_LAST_NTH_CMDS_LEN = 2;
+static const char EVENT_DESIGNATOR_LAST_NTH_CMD_STR[] = "!-";
+static const char EVENT_DESIGNATOR_LAST_NTH_CMD_LEN = 2;
+
+static const int TAB_TO_SPACE_EQUIVALENCE = 4;
 
 static void
 echo_eval_symbol()
@@ -146,9 +148,18 @@ load_buffer_and_echo(bool *just_handled_arrow,
                      char *char_read)
 {
 	if (!(*just_handled_arrow)) {
-		buffer[*buffer_index] = *char_read;
-		(*buffer_index)++;
-		echo(char_read);
+		if (*char_read == TAB) {
+			char space_char = SPACE;
+			for (int i = 0; i < TAB_TO_SPACE_EQUIVALENCE; i++) {
+				buffer[*buffer_index] = space_char;
+				(*buffer_index)++;
+				echo(&space_char);
+			}
+		} else {
+			buffer[*buffer_index] = *char_read;
+			(*buffer_index)++;
+			echo(char_read);
+		}
 	}
 }
 
@@ -162,17 +173,12 @@ echo_buffer_from_position(char *buffer, int buffer_index, int start_position)
 }
 
 static bool
-check_for_event_designators_and_replace(char *buffer,
-                                        int *buffer_index,
-                                        history_data_t *history,
-                                        char *char_read)
+check_and_replace_last_cmd_designator(char *buffer,
+                                      int *buffer_index,
+                                      history_data_t *history,
+                                      char *char_read)
 {
 	bool was_replaced = false;
-
-	if (history_is_empty(history)) {
-		return was_replaced;
-	}
-
 	char *token = strstr(buffer, EVENT_DESIGNATOR_LAST_CMD_STR);
 
 	while (token != NULL && strlen(token) != 0) {
@@ -195,6 +201,84 @@ check_for_event_designators_and_replace(char *buffer,
 		*char_read = SPACE;
 	}
 	return was_replaced;
+}
+
+static bool
+check_and_replace_last_nth_cmd_designator(char *buffer,
+                                          int *buffer_index,
+                                          history_data_t *history,
+                                          char *char_read)
+{
+	bool was_replaced = false;
+	char *token = strstr(buffer, EVENT_DESIGNATOR_LAST_NTH_CMD_STR);
+	char cmd_number_str[SMALL_BUFLEN];
+
+	while (token != NULL && strlen(token) != 0) {
+		token += EVENT_DESIGNATOR_LAST_CMD_LEN * sizeof(char);
+
+		char *token_end = strchr(token, SPACE);
+		if (token_end == NULL) {
+			token_end = strchr(token, END_STRING);
+		}
+
+		if (token_end == NULL) {
+			break;
+		}
+
+		int token_len_diff = strlen(token) - strlen(token_end);
+		int i = 0;
+		for (i = 0; i < MIN(token_len_diff, SMALL_BUFLEN); i++) {
+			cmd_number_str[i] = token[i];
+		}
+
+		if (i < SMALL_BUFLEN) {
+			cmd_number_str[i] = END_LINE;
+		}
+
+		int cmd_number = atoi(cmd_number_str);
+
+		for (int i = 0;
+		     i < (token_len_diff + EVENT_DESIGNATOR_LAST_NTH_CMD_LEN);
+		     i++) {
+			delete_one_buffered_character(buffer_index);
+		}
+
+		int original_buff_index = *buffer_index;
+		history_append_last_nth_cmd(
+		        history, cmd_number, buffer, buffer_index, BUFLEN);
+		echo_buffer_from_position(buffer,
+		                          *buffer_index,
+		                          original_buff_index);
+
+		token = strstr(token, EVENT_DESIGNATOR_LAST_CMD_STR);
+		was_replaced = true;
+	}
+
+	if (was_replaced) {
+		*char_read = SPACE;
+	}
+	return was_replaced;
+}
+
+static bool
+check_for_event_designators_and_replace(char *buffer,
+                                        int *buffer_index,
+                                        history_data_t *history,
+                                        char *char_read)
+{
+	bool was_replaced_last = false;
+	bool was_replaced_last_nth = false;
+
+	if (history_is_empty(history)) {
+		return false;
+	}
+
+	was_replaced_last = check_and_replace_last_cmd_designator(
+	        buffer, buffer_index, history, char_read);
+	was_replaced_last_nth = check_and_replace_last_nth_cmd_designator(
+	        buffer, buffer_index, history, char_read);
+
+	return was_replaced_last || was_replaced_last_nth;
 }
 
 static bool
@@ -255,14 +339,15 @@ read_line_non_canonical(const char *prompt,
 			/* fall through */
 
 		default:
-			if (!was_replaced) {
-				load_buffer_and_echo(just_handled_arrow_action,
-				                     buffer,
-				                     &i,
-				                     &char_read);
-				*just_handled_arrow_action = false;
-				read(STDIN_FILENO, &char_read, 1 * sizeof(char));
+			if (was_replaced) {
+				break;
 			}
+			load_buffer_and_echo(just_handled_arrow_action,
+			                     buffer,
+			                     &i,
+			                     &char_read);
+			*just_handled_arrow_action = false;
+			read(STDIN_FILENO, &char_read, 1 * sizeof(char));
 			break;
 		}
 		was_replaced = false;

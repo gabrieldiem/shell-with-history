@@ -109,6 +109,12 @@ history_print_all(history_data_t *history, int *status)
 	*status = EXIT_SUCCESS;
 }
 
+bool
+history_is_empty(history_data_t *history)
+{
+	return history->history_count == 0;
+}
+
 void
 history_append_last_cmd(history_data_t *history,
                         char *cmd_buffer,
@@ -128,8 +134,32 @@ history_append_last_cmd(history_data_t *history,
 	(*cmd_buffer_index) += printed_amount;
 }
 
-bool
-history_is_empty(history_data_t *history)
+void
+history_append_last_nth_cmd(history_data_t *history,
+                            int n,
+                            char *cmd_buffer,
+                            int *cmd_buffer_index,
+                            int max_cmd_buff_len)
 {
-	return history->history_count == 0;
+	if (history->history_count <= 0) {
+		return;
+	}
+
+	int absolute_index = history->history_count - n;
+
+	if (absolute_index < 0) {
+		absolute_index = 0;
+	}
+
+	if (absolute_index > history->history_index) {
+		absolute_index = history->history_index;
+	}
+
+	int size = max_cmd_buff_len - (*cmd_buffer_index) + 1;
+	int printed_amount = snprintf(cmd_buffer + *cmd_buffer_index,
+	                              size,
+	                              "%s",
+	                              history->history_vector[absolute_index]);
+
+	(*cmd_buffer_index) += printed_amount;
 }
