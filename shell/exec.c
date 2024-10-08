@@ -7,7 +7,6 @@
 static const char STR_COMBINE_STREAM_2_INTO_STREAM_1[] = "&1";
 static const int LEN_STR_COMBINE_STREAM_2_INTO_STREAM_1 = 3;
 static const char KEY_VALUE_SEPARATOR = '=';
-static const int OVERWRITE_TRUE = 1;
 
 // sets "key" with the key part of "arg"
 // and null-terminates it
@@ -48,6 +47,43 @@ get_environ_value(char *arg, char *value, int idx)
 	value[j] = END_STRING;
 }
 
+static void
+set_one_env_var(char *env_var)
+{
+	int key_value_separator_index =
+	        block_contains(env_var, KEY_VALUE_SEPARATOR);
+	if (key_value_separator_index == GENERIC_ERROR_CODE) {
+		return;
+	}
+
+	int environ_var_key_len = strlen(env_var);
+	char *environ_var_key = calloc(environ_var_key_len, sizeof(char));
+	if (environ_var_key == NULL) {
+		perror("Error while allocating memory");
+		return;
+	}
+
+	char *environ_var_value = calloc(environ_var_key_len, sizeof(char));
+	if (environ_var_value == NULL) {
+		perror("Error while allocating memory");
+		free(environ_var_key);
+		return;
+	}
+
+	environ_var_key[0] = END_STRING;
+	environ_var_value[0] = END_STRING;
+
+	get_environ_key(env_var, environ_var_key);
+	get_environ_value(env_var, environ_var_value, key_value_separator_index);
+
+	int res = setenv(environ_var_key, environ_var_value, OVERWRITE_TRUE);
+	if (res == GENERIC_ERROR_CODE) {
+		perror("Error while setting environment variable");
+	}
+	free(environ_var_key);
+	free(environ_var_value);
+}
+
 // sets the environment variables received
 // in the command line
 //
@@ -55,46 +91,11 @@ get_environ_value(char *arg, char *value, int idx)
 // - use 'block_contains()' to
 // 	get the index where the '=' is
 // - 'get_environ_*()' can be useful here
-static void
+void
 set_environ_vars(char **eargv, int eargc)
 {
 	for (int i = 0; i < eargc; i++) {
-		int key_value_separator_index =
-		        block_contains(eargv[i], KEY_VALUE_SEPARATOR);
-		if (key_value_separator_index == GENERIC_ERROR_CODE) {
-			continue;
-		}
-
-		int environ_var_key_len = strlen(eargv[i]);
-		char *environ_var_key = calloc(environ_var_key_len, sizeof(char));
-		if (environ_var_key == NULL) {
-			perror("Error while allocating memory");
-			continue;
-		}
-
-		char *environ_var_value =
-		        calloc(environ_var_key_len, sizeof(char));
-		if (environ_var_value == NULL) {
-			perror("Error while allocating memory");
-			free(environ_var_key);
-			continue;
-		}
-
-		environ_var_key[0] = END_STRING;
-		environ_var_value[0] = END_STRING;
-
-		get_environ_key(eargv[i], environ_var_key);
-		get_environ_value(eargv[i],
-		                  environ_var_value,
-		                  key_value_separator_index);
-
-		int res =
-		        setenv(environ_var_key, environ_var_value, OVERWRITE_TRUE);
-		if (res == GENERIC_ERROR_CODE) {
-			perror("Error while setting environment variable");
-		}
-		free(environ_var_key);
-		free(environ_var_value);
+		set_one_env_var(eargv[i]);
 	}
 }
 

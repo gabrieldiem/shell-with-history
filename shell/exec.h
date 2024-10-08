@@ -11,4 +11,6 @@ extern int status;
 
 void exec_cmd(struct cmd *c, stack_t *signal_alt_stack);
 
+void set_environ_vars(char **eargv, int eargc);
+
 #endif  // EXEC_H

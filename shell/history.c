@@ -7,6 +7,14 @@ history_init(history_data_t *history)
 {
 	history->history_count = 0;
 	history->history_index = 1;
+
+	int res = setenv(HISTFILE_ENV_VAR_NAME,
+	                 HISTFILE_DEFAULT_PATH,
+	                 OVERWRITE_TRUE);
+	if (res == GENERIC_ERROR_CODE) {
+		perror("Error while setting HISTFILE");
+		exit(EXIT_FAILURE);
+	}
 }
 
 static void

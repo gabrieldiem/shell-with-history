@@ -3,7 +3,6 @@
 
 #include "defs.h"
 
-// typedef struct history_data history_data_t;
 #define MAX_HISTORY 400
 
 typedef struct history_data {

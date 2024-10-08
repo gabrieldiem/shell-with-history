@@ -1,6 +1,9 @@
 #include "builtin.h"
 #include <limits.h>
 #include "utils.h"
+#include "parsing.h"
+#include "freecmd.h"
+#include "exec.h"
 
 static const int EXECUTED = (int) true, NOT_EXECUTED = (int) false;
 
@@ -15,6 +18,9 @@ static const int LEN_PWD_CMD_STR = 4;
 
 static const char HISTORY_CMD_STR[] = "history";
 static const int LEN_HISTORY_CMD_STR = 8;
+
+static const int HISTORY_OPTIONAL_PARAM_COUNT = 1;
+static const int HISTORY_LAST_NTH_AMOUNT_POS = 1;
 
 // returns true if the 'exit' call
 // should be performed
@@ -181,20 +187,36 @@ is_history_command(char *cmd)
 int
 history(char *cmd, int *status, history_data_t *history)
 {
-	if (!is_history_command(cmd)) {
+	struct cmd *parsed_cmd;
+	parsed_cmd = parse_line(cmd, status);
+
+	if (parsed_cmd->type != EXEC) {
+		free_command(parsed_cmd);
+		return NOT_EXECUTED;
+	}
+	struct execcmd *history_cmd = (struct execcmd *) parsed_cmd;
+
+	if (!is_history_command(history_cmd->argv[0])) {
+		free_command(parsed_cmd);
 		return NOT_EXECUTED;
 	}
 
-	char amount_str[PATH_MAX] = { END_STRING };
-	char *temp_amount_str = strchr(cmd, SPACE);
+	if (history_cmd->argc > HISTORY_OPTIONAL_PARAM_COUNT + 1) {
+		perror("Error at calling history command. Expected: history "
+		       "[n]");
+		free_command(parsed_cmd);
+		return EXECUTED;
+	}
 
-	if (temp_amount_str != NULL && is_non_empty(temp_amount_str)) {
-		strncpy(amount_str, temp_amount_str + 1, PATH_MAX - 1);
-		int amount = atoi(amount_str);
-		history_print_last_n(history, amount, status);
+	set_environ_vars(history_cmd->eargv, history_cmd->eargc);
+
+	if (history_cmd->argc == HISTORY_OPTIONAL_PARAM_COUNT + 1) {
+		int n = atoi(history_cmd->argv[HISTORY_LAST_NTH_AMOUNT_POS]);
+		history_print_last_n(history, n, status);
 	} else {
 		history_print_all(history, status);
 	}
 
+	free_command(parsed_cmd);
 	return EXECUTED;
 }
