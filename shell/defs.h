@@ -78,7 +78,7 @@
 #define SHELL_CANONICAL_MODE 0
 #define SHELL_NON_CANONICAL_MODE 1
 
-#define HISTFILE_DEFAULT_PATH "~/.fisop_history"
+#define HISTFILE_DEFAULT_PATH "/.fisop_history"
 #define HISTFILE_ENV_VAR_NAME "HISTFILE"
 
 #define OVERWRITE_TRUE 1

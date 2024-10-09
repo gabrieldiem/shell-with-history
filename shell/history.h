@@ -3,12 +3,14 @@
 
 #include "defs.h"
 
-#define MAX_HISTORY 400
-
 typedef struct history_data {
-	char history_vector[MAX_HISTORY][BUFLEN];
+	// char history_vector[MAX_HISTORY][BUFLEN];
+	char **history_vector;
+	size_t history_vector_size;
 	int history_count;
 	int history_index;
+	char histfile_location[FNAMESIZE];
+	FILE *history_file;
 } history_data_t;
 
 void history_init(history_data_t *history);
@@ -43,5 +45,7 @@ void history_append_last_nth_cmd(history_data_t *history,
                                  char *cmd_buffer,
                                  int *cmd_buffer_index,
                                  int max_cmd_buff_len);
+
+void history_destroy(history_data_t *history);
 
 #endif  // HISTORY_H

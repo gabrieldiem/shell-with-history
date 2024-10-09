@@ -236,5 +236,6 @@ main(void)
 	run_shell(&signal_alt_stack, run_mode, &history);
 
 	free_alternative_stack(&signal_alt_stack);
+	history_destroy(&history);
 	return 0;
 }
