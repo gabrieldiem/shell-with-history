@@ -234,6 +234,9 @@ parse_exec(char *buf_cmd, int *status)
 		        !was_expanded || (was_expanded && strlen(tok) > 0);
 		if (should_index_tok) {
 			c->argv[argc++] = tok;
+		} else {
+			free(tok);
+			tok = NULL;
 		}
 	}
 
