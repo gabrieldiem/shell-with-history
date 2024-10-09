@@ -4,13 +4,13 @@
 #include "defs.h"
 
 typedef struct history_data {
-	// char history_vector[MAX_HISTORY][BUFLEN];
 	char **history_vector;
 	size_t history_vector_size;
 	int history_count;
 	int history_index;
 	char histfile_location[FNAMESIZE];
 	FILE *history_file;
+	bool initialized;
 } history_data_t;
 
 void history_init(history_data_t *history);

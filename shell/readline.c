@@ -4,6 +4,8 @@
 #include "readline.h"
 
 static char buffer[BUFLEN];
+
+#ifndef SHELL_NO_INTERACTIVE
 static char ansi_sequence_buff[ANSI_SEQUENCE_BUFF_SIZE] = { END_STRING };
 static const char EVENT_DESIGNATOR_LAST_CMD_STR[] = "!!";
 static const char EVENT_DESIGNATOR_LAST_CMD_LEN = 2;
@@ -12,6 +14,7 @@ static const char EVENT_DESIGNATOR_LAST_NTH_CMD_STR[] = "!-";
 static const char EVENT_DESIGNATOR_LAST_NTH_CMD_LEN = 2;
 
 static const int TAB_TO_SPACE_EQUIVALENCE = 4;
+#endif
 
 static void
 echo_eval_symbol()
@@ -41,6 +44,7 @@ read_line(const char *prompt)
 	}
 #else
 	MARK_UNUSED(prompt);
+	MARK_UNUSED_ALWAYS(echo_prompt);
 #endif
 
 	memset(buffer, 0, BUFLEN);
@@ -61,6 +65,8 @@ read_line(const char *prompt)
 
 	return buffer;
 }
+
+#ifndef SHELL_NO_INTERACTIVE
 
 static void
 echo_buffer_with_prompt()
@@ -141,6 +147,7 @@ echo(char *char_read)
 	write(STDOUT_FILENO, char_read, 1 * sizeof(char));
 	fflush(stdout);
 }
+
 
 static void
 load_buffer_and_echo(bool *just_handled_arrow,
@@ -288,11 +295,14 @@ is_character_eof(char char_read)
 	return (unsigned int) char_read == EOT_ASCII_CODE;
 }
 
+#endif
+
 char *
 read_line_non_canonical(const char *prompt,
                         bool *just_handled_arrow_action,
                         history_data_t *history)
 {
+#ifndef SHELL_NO_INTERACTIVE
 	int i = 0;
 	char char_read = 0;
 	bool should_stop = false;
@@ -361,4 +371,11 @@ read_line_non_canonical(const char *prompt,
 		return NULL;
 
 	return buffer;
+
+#else
+	MARK_UNUSED_ALWAYS(prompt);
+	MARK_UNUSED_ALWAYS(just_handled_arrow_action);
+	MARK_UNUSED_ALWAYS(history);
+	return NULL;
+#endif
 }

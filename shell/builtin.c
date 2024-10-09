@@ -19,8 +19,10 @@ static const int LEN_PWD_CMD_STR = 4;
 static const char HISTORY_CMD_STR[] = "history";
 static const int LEN_HISTORY_CMD_STR = 8;
 
+#ifndef SHELL_NO_INTERACTIVE
 static const int HISTORY_OPTIONAL_PARAM_COUNT = 1;
 static const int HISTORY_LAST_NTH_AMOUNT_POS = 1;
+#endif
 
 // returns true if the 'exit' call
 // should be performed
@@ -187,6 +189,7 @@ is_history_command(char *cmd)
 int
 history(char *cmd, int *status, history_data_t *history)
 {
+#ifndef SHELL_NO_INTERACTIVE
 	struct cmd *parsed_cmd;
 	parsed_cmd = parse_line(cmd, status);
 
@@ -219,4 +222,11 @@ history(char *cmd, int *status, history_data_t *history)
 
 	free_command(parsed_cmd);
 	return EXECUTED;
+#else
+	MARK_UNUSED_ALWAYS(cmd);
+	MARK_UNUSED_ALWAYS(status);
+	MARK_UNUSED_ALWAYS(history);
+	MARK_UNUSED_ALWAYS(is_history_command);
+	return NOT_EXECUTED;
+#endif
 }

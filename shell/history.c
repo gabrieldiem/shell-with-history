@@ -3,6 +3,7 @@
 #include <string.h>
 
 static const bool DEFAULT = true, NOT_DEFAULT = false;
+static const bool INITIALIZED = true, NOT_INITIALIZED = false;
 static const char READ_AND_WRITE_APPENDING_FILE_PERMS[] = "a+";
 static const size_t HISTORY_VECTOR_GROW_FACTOR = 2;
 
@@ -151,6 +152,8 @@ update_histfile_if_needed(history_data_t *history)
 void
 history_init(history_data_t *history)
 {
+#ifndef SHELL_NO_INTERACTIVE
+	history->initialized = INITIALIZED;
 	history->history_vector_size = 0;
 	history->history_count = 0;
 	history->history_index = 1;
@@ -169,6 +172,11 @@ history_init(history_data_t *history)
 		perror("Error while setting HISTFILE");
 		exit(EXIT_FAILURE);
 	}
+#else
+	MARK_UNUSED_ALWAYS(INITIALIZED);
+	MARK_UNUSED_ALWAYS(DEFAULT);
+	history->initialized = NOT_INITIALIZED;
+#endif
 }
 
 static void
@@ -189,6 +197,10 @@ history_move_backwards(history_data_t *history,
                        int *current_cmd_buffer_index,
                        void (*action_when_refreshed)())
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	if (history->history_index > 0 && *should_start_moving_index) {
 		(history->history_index)--;
 	}
@@ -208,6 +220,10 @@ history_move_forwards(history_data_t *history,
                       int *current_cmd_buffer_index,
                       void (*action_when_refreshed)())
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	if (history->history_index < history->history_count - 1) {
 		(history->history_index)++;
 	} else if (history->history_index == history->history_count - 1) {
@@ -270,6 +286,10 @@ write_entry_to_histfile(history_data_t *history, char *cmd)
 void
 history_add_entry(history_data_t *history, char *new_cmd_buffer)
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	update_histfile_if_needed(history);
 	if (strlen(new_cmd_buffer) > 0 &&
 	    !is_cmd_equal_to_last_cmd(history, new_cmd_buffer)) {
@@ -307,6 +327,14 @@ history_print_from_index_i(history_data_t *history, int index_i)
 void
 history_print_last_n(history_data_t *history, unsigned int n, int *status)
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	update_histfile_if_needed(history);
 	int normalized_n = n;
 	if (normalized_n > history->history_count) {
@@ -330,6 +358,10 @@ history_print_all(history_data_t *history, int *status)
 bool
 history_is_empty(history_data_t *history)
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return true;
+	}
+
 	return history->history_count == 0;
 }
 
@@ -339,6 +371,10 @@ history_append_last_cmd(history_data_t *history,
                         int *cmd_buffer_index,
                         int max_cmd_buff_len)
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	if (history->history_count <= 0) {
 		return;
 	}
@@ -359,6 +395,10 @@ history_append_last_nth_cmd(history_data_t *history,
                             int *cmd_buffer_index,
                             int max_cmd_buff_len)
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	if (history->history_count <= 0) {
 		return;
 	}
@@ -385,6 +425,10 @@ history_append_last_nth_cmd(history_data_t *history,
 void
 history_destroy(history_data_t *history)
 {
+	if (history->initialized == NOT_INITIALIZED) {
+		return;
+	}
+
 	fclose(history->history_file);
 	history->history_file = NULL;
 

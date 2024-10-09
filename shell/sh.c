@@ -190,6 +190,7 @@ enable_non_canonical_mode()
 	}
 	return SUCCESS;
 #else
+	MARK_UNUSED(restore_original_terminal_settings);
 	return FAILED;
 #endif
 }
