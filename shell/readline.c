@@ -83,12 +83,11 @@ handle_history_switch(char *buffer,
 	memset(ansi_sequence_buff, END_STRING, ANSI_SEQUENCE_BUFF_SIZE);
 	ansi_sequence_buff[0] = char_read;
 	if (read(STDIN_FILENO, &ansi_sequence_buff[1], 2) == 2) {
-		memset(buffer, END_STRING, BUFLEN);
-		*buffer_index = 0;
-
 		if (ansi_sequence_buff[1] == BEGIN_ANSI_FUNCTION_CHARACTER) {
 			switch (ansi_sequence_buff[2]) {
 			case ANSI_FUNCTION_CURSOR_UP_CHARACTER:
+				memset(buffer, END_STRING, BUFLEN);
+				*buffer_index = 0;
 				history_move_backwards(history,
 				                       just_handled_arrow,
 				                       buffer,
@@ -98,6 +97,8 @@ handle_history_switch(char *buffer,
 				break;
 
 			case ANSI_FUNCTION_CURSOR_DOWN_CHARACTER:
+				memset(buffer, END_STRING, BUFLEN);
+				*buffer_index = 0;
 				history_move_forwards(history,
 				                      just_handled_arrow,
 				                      buffer,
