@@ -125,7 +125,7 @@ load_history_location(char *location,
 	}
 
 	char *res_ptr = realpath(temp_path, resolved_path);
-	if (res_ptr == NULL) {
+	if (res_ptr == NULL && !is_default) {
 		perror("Error on resolving path for histfile");
 		exit(EXIT_FAILURE);
 	}
